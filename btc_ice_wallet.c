@@ -1,6 +1,3 @@
-//#define NDEBUG
-#include <assert.h>
-
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
@@ -46,9 +43,6 @@ void print_segwit_addr_with_checksum
 , size_t witprog_len		// Number of data bytes in witprog.
 )
 {
-	assert( witprog);
-	assert( witprog_len);
-
 	static const char bech32map[] = "qpzry9x8gf2tvdw0s3jn54khce6mua7l";
 
 	// convert_bits
@@ -117,9 +111,6 @@ void print_segwit_addr_with_checksum
 // ==============================================================
 void print_base58_with_checksum( uint8_t *src, size_t len)
 {
-	assert( src);
-	assert( len);
-
 	static const char base58map[] =	"123456789"
 					"ABCDEFGH""JKLMN""PQRSTUVWXYZ"
 					"abcdefghijk""mnopqrstuvwxyz";
@@ -166,10 +157,6 @@ void print_base58_with_checksum( uint8_t *src, size_t len)
 #define HASH160_LEN RIPEMD160_DIGEST_LENGTH
 uint8_t *hash160( const uint8_t *d, size_t n, uint8_t *md)
 {
-	assert( d);
-	assert( n);
-	assert( md);
-
 	uint8_t sha256digest[ SHA256_DIGEST_LENGTH];
 	SHA256( d, n, sha256digest);
 	return RIPEMD160( PL( sha256digest), md);
@@ -258,10 +245,10 @@ int main( const int argc, const char *argv[])
 	// A BN_CTX is a structure that holds BIGNUM temporary variables used by library functions.
 	BN_CTX *ctx = BN_CTX_new();
 	// pub_key is a new uninitialized `EC_POINT*`. priv_key is a `BIGNUM*`.
-	assert( EC_POINT_mul( group, pub_key, priv_key, NULL, NULL, ctx));
+	EC_POINT_mul( group, pub_key, priv_key, NULL, NULL, ctx);
 	EC_KEY_set_public_key( eckey, pub_key);
 	uint8_t pub_key_bin[ EC_POINT_COMPRESSED_SIZE];
-	assert( EC_POINT_point2oct( group, pub_key, POINT_CONVERSION_COMPRESSED, PL( pub_key_bin), ctx));
+	EC_POINT_point2oct( group, pub_key, POINT_CONVERSION_COMPRESSED, PL( pub_key_bin), ctx);
 
 
 
