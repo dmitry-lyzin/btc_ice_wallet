@@ -16,12 +16,13 @@
 #	pragma warning( disable: 4996)
 #endif
 
+#define SHA256ROUNDS 1000000
 
 #define L(x)       ((sizeof (x)) / (sizeof *(x)))
 #define PL(x) (x), ((sizeof (x)) / (sizeof *(x)))
 
-#define EC_POINT_COMPRESSED_SIZE	33
-#define EC_POINT_UNCOMPRESSED_SIZE	65
+#define POINT_OCT_COMPRESSED_SIZE	33
+#define POINT_OCT_UNCOMPRESSED_SIZE	65
 
 // Version of the witness program (between 0 and 16 inclusive)
 #define WITVER 0x00
@@ -37,11 +38,13 @@ uint32_t bech32_polymod_step( int32_t b)
 	^ ( -( (b >> 29) & 1) & 0x2a1462b3UL);
 }
 
-// ==============================================================
-void print_segwit_addr_with_checksum
-( const uint8_t *witprog	// Data bytes for the witness program (between 2 and 40 bytes)
-, size_t witprog_len		// Number of data bytes in witprog.
-)
+// =============================================================
+/** print segwit with checksum
+ *  \param  witprog	Data bytes for the witness program (between 2 and 40 bytes)
+ *  \param  witprog_len	Number of data bytes in witprog
+ *  \return -
+ */
+void print_segwit_with_checksum( const uint8_t *witprog, size_t witprog_len)
 {
 	static const char bech32map[] = "qpzry9x8gf2tvdw0s3jn54khce6mua7l";
 
@@ -165,14 +168,6 @@ uint8_t *hash160( const uint8_t *d, size_t n, uint8_t *md)
 // ==============================================================
 int main( const int argc, const char *argv[])
 {
-	int sha256rounds = 100000;
-	if( argc > 1)
-	{
-		int param = atoi( argv[1]);
-		sha256rounds = param ? param
-		                     : sha256rounds;
-	}
-
 	uint8_t buf[ 4*1024];
 	SHA256_CTX sha256;
 	SHA256_Init( &sha256);
@@ -189,20 +184,18 @@ int main( const int argc, const char *argv[])
 	uint8_t priv_key_bin[ SHA256_DIGEST_LENGTH];
 	SHA256_Final( priv_key_bin, &sha256);
 
-	--sha256rounds;
 	uint8_t sha256digest[ SHA256_DIGEST_LENGTH];
-	int i = sha256rounds / 2;
+	int i = (SHA256ROUNDS-1) / 2;
 	for( ; i > 0; --i)
 	{
 		SHA256( PL( priv_key_bin), sha256digest);
 		SHA256( PL( sha256digest), priv_key_bin);
 	}
-	if( sha256rounds % 2 > 0)
-	{
-		SHA256( PL( priv_key_bin), sha256digest);
-		memcpy( priv_key_bin, PL( sha256digest));
-	}
 
+#if (SHA256ROUNDS-1) % 2
+	SHA256( PL( priv_key_bin), sha256digest);
+	memcpy( priv_key_bin, PL( sha256digest));
+#endif
 
 	BIGNUM *priv_key = BN_new();
 	BN_bin2bn( PL( priv_key_bin), priv_key);
@@ -247,7 +240,7 @@ int main( const int argc, const char *argv[])
 	// pub_key is a new uninitialized `EC_POINT*`. priv_key is a `BIGNUM*`.
 	EC_POINT_mul( group, pub_key, priv_key, NULL, NULL, ctx);
 	EC_KEY_set_public_key( eckey, pub_key);
-	uint8_t pub_key_bin[ EC_POINT_COMPRESSED_SIZE];
+	uint8_t pub_key_bin[ POINT_OCT_COMPRESSED_SIZE];
 	EC_POINT_point2oct( group, pub_key, POINT_CONVERSION_COMPRESSED, PL( pub_key_bin), ctx);
 
 
@@ -275,7 +268,7 @@ int main( const int argc, const char *argv[])
 
 	printf( "p2wpkh (segwit)\taddress:  ");
 	hash160( PL( pub_key_bin), buf);
-	print_segwit_addr_with_checksum( buf, HASH160_LEN);
+	print_segwit_with_checksum( buf, HASH160_LEN);
 
 	return 0;
 }
