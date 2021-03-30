@@ -18,7 +18,7 @@
 
 #define SHA256ROUNDS 1000000
 
-#define L(x)       ((sizeof (x)) / (sizeof *(x)))
+#define SIZE(x)    ((sizeof (x)) / (sizeof *(x)))
 #define PL(x) (x), ((sizeof (x)) / (sizeof *(x)))
 
 #define POINT_OCT_COMPRESSED_SIZE	33
@@ -280,7 +280,6 @@ int main( const int argc, const char *argv[])
 // https://stackoverflow.com/questions/17672696/generating-bitcoin-address-from-ecdsa-public-key
 // https://medium.com/coinmonks/how-to-generate-a-bitcoin-address-step-by-step-9d7fcbf1ad0b
 // https://en.bitcoin.it/wiki/Wallet_import_format
-// cc -O2 -pipe btc_ice_wallet.c -o btc_ice_wallet -lssl
 
 //https://privatekeys.pw/key/403FEBC6B59788064E8FE1F96F1E94B5F00E74E563DFB6C2568A5079A69201F1
 
