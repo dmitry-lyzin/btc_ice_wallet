@@ -118,7 +118,8 @@ void print_segwit_with_checksum( const uint8_t *witprog, size_t witprog_len)
 // ==============================================================
 void print_base58_with_checksum( uint8_t *src, size_t len)
 {
-	assert( len);
+	enum { max_len = 34 };
+	assert( 0 < len && len <= max_len);
 
 	static const char base58map[] =	"123456789"
 					"ABCDEFGH""JKLMN""PQRSTUVWXYZ"
@@ -129,7 +130,7 @@ void print_base58_with_checksum( uint8_t *src, size_t len)
 	SHA256( PL( sha256digest), src + len);
 	len += 4;
 
-	uint8_t *ret = (uint8_t *)malloc( (len / 2 + 1) * 3);
+	uint8_t ret[ ((max_len + 4) / 2 + 1) * 3];
 	uint8_t *rptr = ret;
 	uint8_t *end = src + len;
 
@@ -153,11 +154,10 @@ void print_base58_with_checksum( uint8_t *src, size_t len)
 		*rptr++ = base58map[rest];
 	}
 
-	while( rptr > ret)
+	while (rptr > ret)
 		putchar( *--rptr);
 
 	putchar( '\n');
-	free( ret);
 }
 
 // ==============================================================
