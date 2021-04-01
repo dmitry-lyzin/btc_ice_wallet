@@ -1,4 +1,5 @@
-all: btc_ice_wallet
+all: Release/btc_ice_wallet
 
-btc_ice_wallet: btc_ice_wallet.c
-	$(CC) -O2 -pipe $< -o $@ -lssl
+Release/btc_ice_wallet: btc_ice_wallet.c
+	mkdir -p $(@D)
+	$(CC) -O2 -pipe -lssl -DNDEBUG -o $(@) $(?)
