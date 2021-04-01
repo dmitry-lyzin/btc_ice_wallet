@@ -1,6 +1,3 @@
-//#define NDEBUG
-#include <assert.h>
-
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
@@ -10,6 +7,7 @@
 #include <openssl/ec.h>
 #include <openssl/obj_mac.h>
 #include <openssl/bn.h>
+#include <assert.h>
 
 #ifdef __unix__
 #	include <unistd.h>
@@ -23,10 +21,11 @@
 
 #define SIZE(x)    ((sizeof (x)) / (sizeof *(x)))
 #define PL(x) (x), ((sizeof (x)) / (sizeof *(x)))
+// исполнить e и проверить assert'ом результат
 #define ISNT_0(e) do { int isnt_0 = (e); assert( #e && isnt_0); } while(0)
 
-#define POINT_OCT_COMPRESSED_SIZE	33
-#define POINT_OCT_UNCOMPRESSED_SIZE	65
+#define POINT_BIN_COMPRESSED_SIZE	33
+#define POINT_BIN_UNCOMPRESSED_SIZE	65
 
 // Version of the witness program (between 0 and 16 inclusive)
 #define WITVER 0x00
@@ -42,6 +41,9 @@ uint32_t bech32_polymod_step( int32_t b)
 	^ ( -( (b >> 29) & 1) & 0x2a1462b3UL);
 }
 
+// human readable part (chain/network specific)
+#define HRP "bc"
+
 // =============================================================
 /** print segwit with checksum
  *  \param  witprog	Data bytes for the witness program (between 2 and 40 bytes)
@@ -50,12 +52,11 @@ uint32_t bech32_polymod_step( int32_t b)
  */
 void print_segwit_with_checksum( const uint8_t *witprog, size_t witprog_len)
 {
-	assert( witprog_len);
+	assert( 2 <= witprog_len && witprog_len <= 40);
 
 	static const char bech32map[] = "qpzry9x8gf2tvdw0s3jn54khce6mua7l";
 
 	// convert_bits
-
 	uint32_t val = 0;
 	int bits = 0;
 	uint8_t data[65];
@@ -74,9 +75,6 @@ void print_segwit_with_checksum( const uint8_t *witprog, size_t witprog_len)
 	}
 	if( bits)
 		*pdata++ = (val << (5 - bits)) & 0x1f;
-
-	// human readable part (chain/network specific)
-#define HRP "bc"
 
 	// bech32_encode
 	size_t i = 0;
@@ -178,6 +176,7 @@ uint8_t *hash160( const uint8_t *d, size_t n, uint8_t *md)
 // ==============================================================
 int main( const int argc, const char *argv[])
 {
+	int i;
 	uint8_t buf[ 4*1024];
 	SHA256_CTX sha256;
 	SHA256_Init( &sha256);
@@ -195,8 +194,7 @@ int main( const int argc, const char *argv[])
 	SHA256_Final( priv_key_bin, &sha256);
 
 	uint8_t sha256digest[ SHA256_DIGEST_LENGTH];
-	int i = (SHA256ROUNDS-1) / 2;
-	for( ; i > 0; --i)
+	for( i = (SHA256ROUNDS - 1) / 2; i > 0; --i)
 	{
 		SHA256( PL( priv_key_bin), sha256digest);
 		SHA256( PL( sha256digest), priv_key_bin);
@@ -213,11 +211,7 @@ int main( const int argc, const char *argv[])
 	//BN_hex2bn( &priv_key, "a966eb6058f8ec9f47074a2faadd3dab42e2c60ed05bc34d39d6c0e1d32b8bdf");
 	//BN_hex2bn( &priv_key, "0C28FCA386C7A227600B2FE50B7CAE11EC86D3BF1FBE471BE89827E19D72AA1D");
 	//BN_hex2bn( &priv_key, "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFBAAEDCE6AF48A03BBFD25E8CD0364141");
-
-
-
-	printf( "private key (hexadecimal format):\t%s\n", BN_bn2hex( priv_key));
-
+	//printf( "private key (hexadecimal format):\t%s\n", BN_bn2hex( priv_key));
 
 
 	printf( "private key (Wallet Import Format):\t");
@@ -227,7 +221,6 @@ int main( const int argc, const char *argv[])
 	p += BN_num_bytes( priv_key);
 	*p++ = 0x01;  // COMPRESSED_FLAG
 	print_base58_with_checksum( buf, p - buf);
-
 
 
 	static const char
@@ -240,22 +233,20 @@ int main( const int argc, const char *argv[])
 		return 1;
 	}
 
+	// A BN_CTX is a structure that holds BIGNUM temporary variables used by library functions.
+	BN_CTX* ctx = BN_CTX_new();
 	EC_KEY *eckey = EC_KEY_new_by_curve_name( NID_secp256k1);
 	const EC_GROUP *group = EC_KEY_get0_group( eckey);
+	// pub_key is a new uninitialized `EC_POINT*`.
 	EC_POINT *pub_key = EC_POINT_new( group);
+	uint8_t pub_key_bin[ POINT_BIN_COMPRESSED_SIZE];
 	ISNT_0( EC_KEY_set_private_key( eckey, priv_key));
-
-	// A BN_CTX is a structure that holds BIGNUM temporary variables used by library functions.
-	BN_CTX *ctx = BN_CTX_new();
-	// pub_key is a new uninitialized `EC_POINT*`. priv_key is a `BIGNUM*`.
 	ISNT_0( EC_POINT_mul( group, pub_key, priv_key, NULL, NULL, ctx));
 	ISNT_0( EC_KEY_set_public_key( eckey, pub_key));
-	uint8_t pub_key_bin[POINT_OCT_COMPRESSED_SIZE];
 	ISNT_0( EC_POINT_point2oct( group, pub_key, POINT_CONVERSION_COMPRESSED, PL( pub_key_bin), ctx));
 
 
-
-	printf( "p2pkh (legacy)\taddress:  1");
+	printf( "p2pkh (legacy)  address:\t1");
 	p = buf;
 	*p++ = 0x00;	// address type version byte
 	hash160( PL( pub_key_bin), p);
@@ -263,7 +254,7 @@ int main( const int argc, const char *argv[])
 	print_base58_with_checksum( buf, p - buf);
 
 
-	printf( "p2wpkh-p2sh\taddress:  ");
+	printf( "p2wpkh-p2sh     address:\t");
 	uint8_t redeem_script[ 2+HASH160_LEN];
 	p = redeem_script;
 	*p++ = WITVER;		// witness version
@@ -276,25 +267,9 @@ int main( const int argc, const char *argv[])
 	print_base58_with_checksum( buf, p - buf);
 
 
-	printf( "p2wpkh (segwit)\taddress:  ");
+	printf( "p2wpkh (segwit) address:\t");
 	hash160( PL( pub_key_bin), buf);
 	print_segwit_with_checksum( buf, HASH160_LEN);
 
 	return 0;
 }
-
-
-
-// https://bitcoin.stackexchange.com/questions/75910/how-to-generate-a-native-segwit-address-and-p2sh-segwit-address-from-a-standard
-
-// https://stackoverflow.com/questions/17672696/generating-bitcoin-address-from-ecdsa-public-key
-// https://medium.com/coinmonks/how-to-generate-a-bitcoin-address-step-by-step-9d7fcbf1ad0b
-// https://en.bitcoin.it/wiki/Wallet_import_format
-
-//https://privatekeys.pw/key/403FEBC6B59788064E8FE1F96F1E94B5F00E74E563DFB6C2568A5079A69201F1
-
-// https://tirinox.ru/generate-btc-address/
-// https://habr.com/ru/post/319868/
-// https://github.com/libbitcoin/libbitcoin-system
-
-// https://slproweb.com/products/Win32OpenSSL.html
