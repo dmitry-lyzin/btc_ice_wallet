@@ -23,6 +23,7 @@
 
 #define SIZE(x)    ((sizeof (x)) / (sizeof *(x)))
 #define PL(x) (x), ((sizeof (x)) / (sizeof *(x)))
+#define ISNT_0(e) do { int isnt_0 = (e); assert( #e && isnt_0); } while(0)
 
 #define POINT_OCT_COMPRESSED_SIZE	33
 #define POINT_OCT_UNCOMPRESSED_SIZE	65
@@ -49,7 +50,6 @@ uint32_t bech32_polymod_step( int32_t b)
  */
 void print_segwit_with_checksum( const uint8_t *witprog, size_t witprog_len)
 {
-	assert( witprog);
 	assert( witprog_len);
 
 	static const char bech32map[] = "qpzry9x8gf2tvdw0s3jn54khce6mua7l";
@@ -120,7 +120,6 @@ void print_segwit_with_checksum( const uint8_t *witprog, size_t witprog_len)
 // ==============================================================
 void print_base58_with_checksum( uint8_t *src, size_t len)
 {
-	assert( src);
 	assert( len);
 
 	static const char base58map[] =	"123456789"
@@ -169,9 +168,7 @@ void print_base58_with_checksum( uint8_t *src, size_t len)
 #define HASH160_LEN RIPEMD160_DIGEST_LENGTH
 uint8_t *hash160( const uint8_t *d, size_t n, uint8_t *md)
 {
-	assert( d);
 	assert( n);
-	assert( md);
 
 	uint8_t sha256digest[ SHA256_DIGEST_LENGTH];
 	SHA256( d, n, sha256digest);
@@ -246,15 +243,15 @@ int main( const int argc, const char *argv[])
 	EC_KEY *eckey = EC_KEY_new_by_curve_name( NID_secp256k1);
 	const EC_GROUP *group = EC_KEY_get0_group( eckey);
 	EC_POINT *pub_key = EC_POINT_new( group);
-	EC_KEY_set_private_key( eckey, priv_key);
+	ISNT_0( EC_KEY_set_private_key( eckey, priv_key));
 
 	// A BN_CTX is a structure that holds BIGNUM temporary variables used by library functions.
 	BN_CTX *ctx = BN_CTX_new();
 	// pub_key is a new uninitialized `EC_POINT*`. priv_key is a `BIGNUM*`.
-	assert( EC_POINT_mul( group, pub_key, priv_key, NULL, NULL, ctx));
-	EC_KEY_set_public_key( eckey, pub_key);
-	uint8_t pub_key_bin[ POINT_OCT_COMPRESSED_SIZE];
-	assert( EC_POINT_point2oct( group, pub_key, POINT_CONVERSION_COMPRESSED, PL( pub_key_bin), ctx));
+	ISNT_0( EC_POINT_mul( group, pub_key, priv_key, NULL, NULL, ctx));
+	ISNT_0( EC_KEY_set_public_key( eckey, pub_key));
+	uint8_t pub_key_bin[POINT_OCT_COMPRESSED_SIZE];
+	ISNT_0( EC_POINT_point2oct( group, pub_key, POINT_CONVERSION_COMPRESSED, PL( pub_key_bin), ctx));
 
 
 
