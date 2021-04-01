@@ -129,9 +129,8 @@ void print_base58_with_checksum( uint8_t *src, size_t len)
 	SHA256( PL( sha256digest), src + len);
 	len += 4;
 
-	size_t rlen = (len / 2 + 1) * 3;
-	uint8_t *ret = (uint8_t *)malloc( rlen);
-	uint8_t *rptr = ret + rlen;
+	uint8_t *ret = (uint8_t *)malloc( (len / 2 + 1) * 3);
+	uint8_t *rptr = ret;
 	uint8_t *end = src + len;
 
 	while( src < end)
@@ -151,26 +150,25 @@ void print_base58_with_checksum( uint8_t *src, size_t len)
 			*ptr = (c + *ptr) / 58;
 			ptr++;
 		}
-		*--rptr = base58map[rest];
+		*rptr++ = base58map[rest];
 	}
 
-	while( rptr < ret + rlen)
-		putchar( *rptr++);
+	while( rptr > ret)
+		putchar( *--rptr);
 
 	putchar( '\n');
-
 	free( ret);
 }
 
 // ==============================================================
 #define HASH160_LEN RIPEMD160_DIGEST_LENGTH
-uint8_t *hash160( const uint8_t *d, size_t n, uint8_t *md)
+void hash160( const uint8_t *d, size_t n, uint8_t *md)
 {
 	assert( n);
 
 	uint8_t sha256digest[ SHA256_DIGEST_LENGTH];
 	SHA256( d, n, sha256digest);
-	return RIPEMD160( PL( sha256digest), md);
+	RIPEMD160( PL( sha256digest), md);
 }
 
 // ==============================================================
@@ -229,7 +227,7 @@ int main( const int argc, const char *argv[])
 	BN_hex2bn( &max_priv_key, max_priv_key_hex);
 	if( BN_is_zero( priv_key) || BN_cmp( priv_key, max_priv_key) > 0 )
 	{
-		fprintf( stderr, "\n%s: private key > 0x%s error!\n", argv[0], max_priv_key_hex);
+		fprintf( stderr, "\n%s: error! private key > 0x%s\n", argv[0], max_priv_key_hex);
 		return 1;
 	}
 
@@ -237,7 +235,6 @@ int main( const int argc, const char *argv[])
 	BN_CTX* ctx = BN_CTX_new();
 	EC_KEY *eckey = EC_KEY_new_by_curve_name( NID_secp256k1);
 	const EC_GROUP *group = EC_KEY_get0_group( eckey);
-	// pub_key is a new uninitialized `EC_POINT*`.
 	EC_POINT *pub_key = EC_POINT_new( group);
 	uint8_t pub_key_bin[ POINT_BIN_COMPRESSED_SIZE];
 	ISNT_0( EC_KEY_set_private_key( eckey, priv_key));
