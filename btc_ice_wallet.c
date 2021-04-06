@@ -2,6 +2,7 @@
 #include <errno.h>
 #include <string.h>
 #include <stdint.h>
+#include <fcntl.h>
 #include <openssl/sha.h>
 #include <openssl/ripemd.h>
 #include <openssl/ec.h>
@@ -11,9 +12,11 @@
 
 #ifdef __unix__
 #	include <unistd.h>
+#	define SET_BINARY_MODE( handle) ((void)0)
 #else
 #	include <io.h>
 #	define STDIN_FILENO 0
+#	define SET_BINARY_MODE( handle) setmode( handle, O_BINARY)
 #	pragma warning( disable: 4996)
 #endif
 
@@ -179,6 +182,7 @@ int main( const int argc, const char *argv[])
 	SHA256_CTX sha256;
 	SHA256_Init( &sha256);
 
+	SET_BINARY_MODE( STDIN_FILENO);
 	int readed;
 	while( (readed = read( STDIN_FILENO, PL( buf))) > 0)
 		SHA256_Update( &sha256, buf, readed);
