@@ -89,7 +89,7 @@ void print_segwit_with_checksum( const uint8_t *witprog, size_t witprog_len)
 	chk = bech32_polymod_step( chk);
 	i = 0;
 	while( hrp[i])
-        	chk = bech32_polymod_step( chk) ^ (hrp[i++] & 0x1f);
+		chk = bech32_polymod_step( chk) ^ (hrp[i++] & 0x1f);
 	printf( "\n\n"
 	"uint32_t chk = 0x%lxUL;\n", chk);
 	*/
@@ -133,10 +133,12 @@ void print_base58_with_checksum( uint8_t *src, size_t len)
 	SHA256( PL( sha256digest), src + len);
 	len += 4;
 
-	uint8_t ret[ ((max_len + 4) / 2 + 1) * 3];
-	uint8_t *rptr = ret;
+	char ret[ ((max_len + 4) * 8 + 10) / 6 + 2];  // [ (int)ceil( (max_len + 4.) * log2( 256.) / log2( 58.)) + 2];
+	char *rptr = ret + SIZE( ret);
 	uint8_t *end = src + len;
 
+	*--rptr = '\0';
+	*--rptr = '\n';
 	while( src < end)
 	{
 		if( !*src )
@@ -149,18 +151,15 @@ void print_base58_with_checksum( uint8_t *src, size_t len)
 		uint8_t *ptr = src;
 		while( ptr < end)
 		{
-			unsigned int c = rest * 256;
-			rest = (c + *ptr) % 58;
-			*ptr = (c + *ptr) / 58;
-			ptr++;
+			unsigned int c = rest * 256 + *ptr;
+			rest   = c % 58;
+			*ptr++ = c / 58;
 		}
-		*rptr++ = base58map[rest];
+		assert( rptr > ret);
+		*--rptr = base58map[rest];
 	}
 
-	while (rptr > ret)
-		putchar( *--rptr);
-
-	putchar( '\n');
+	printf( rptr);
 }
 
 // ==============================================================
