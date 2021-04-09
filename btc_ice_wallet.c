@@ -25,7 +25,9 @@
 #define SIZE(x)    ((sizeof (x)) / (sizeof *(x)))
 #define PL(x) (x), ((sizeof (x)) / (sizeof *(x)))
 // исполнить e и проверить assert'ом результат
-#define ISNT_0(e) do { int isnt_0 = (e); assert( #e && isnt_0); } while(0)
+#define ISNT_0(e) do { int is_0 = (e); assert( #e && is_0); } while(0)
+// указатель p должен попадать в массив array 
+#define P_IN_ARRAY( p, array) do { assert( p >= array); assert( p < &array[ SIZE(array)]); } while(0)
 
 #define POINT_BIN_COMPRESSED_SIZE	33
 #define POINT_BIN_UNCOMPRESSED_SIZE	65
@@ -55,14 +57,15 @@ uint32_t bech32_polymod_step( int32_t b)
  */
 void print_segwit_with_checksum( const uint8_t *witprog, size_t witprog_len)
 {
-	assert( 2 <= witprog_len && witprog_len <= 40);
+	enum { max_witprog_len = 40 };
+	assert( 2 <= witprog_len && witprog_len <= max_witprog_len);
 
 	static const char bech32map[] = "qpzry9x8gf2tvdw0s3jn54khce6mua7l";
 
 	// convert_bits
 	uint32_t val = 0;
 	int bits = 0;
-	uint8_t data[65];
+	uint8_t data[ ((max_witprog_len) * 16 + 16 / 2 + 1) / 10 + 1];  // data[ round( max_witprog_len * log2( 256)/log2( 32)) + 1]
 	uint8_t *pdata = data;
 	*pdata++ = WITVER;
 
@@ -73,11 +76,15 @@ void print_segwit_with_checksum( const uint8_t *witprog, size_t witprog_len)
 		while( bits >= 5)
 		{
 			bits -= 5;
+			P_IN_ARRAY( pdata, data);
 			*pdata++ = (val >> bits) & 0x1f;
 		}
 	}
-	if( bits)
+	if (bits)
+	{
+		P_IN_ARRAY( pdata, data);
 		*pdata++ = (val << (5 - bits)) & 0x1f;
+	}
 
 	// bech32_encode
 	size_t i = 0;
@@ -133,12 +140,12 @@ void print_base58_with_checksum( uint8_t *src, size_t len)
 	SHA256( PL( sha256digest), src + len);
 	len += 4;
 
-	char ret[ ((max_len + 4) * 8 + 10) / 6 + 2];  // [ (int)ceil( (max_len + 4.) * log2( 256.) / log2( 58.)) + 2];
-	char *rptr = ret + SIZE( ret);
+	char ret[ ((max_len + 4) * 13656582 + 13656582 / 2 + 1) / 10000000 + 2];  // ret[ round( ( max_len + 4) * log2( 256) / log2( 58)) + 2]
+	char *pret = ret + SIZE( ret);
 	uint8_t *end = src + len;
 
-	*--rptr = '\0';
-	*--rptr = '\n';
+	*--pret = '\0';
+	*--pret = '\n';
 	while( src < end)
 	{
 		if( !*src )
@@ -155,11 +162,11 @@ void print_base58_with_checksum( uint8_t *src, size_t len)
 			rest   = c % 58;
 			*ptr++ = c / 58;
 		}
-		assert( rptr > ret);
-		*--rptr = base58map[rest];
+		*--pret = base58map[rest];
+		P_IN_ARRAY( pret, ret);
 	}
 
-	printf( rptr);
+	printf( pret);
 }
 
 // ==============================================================
