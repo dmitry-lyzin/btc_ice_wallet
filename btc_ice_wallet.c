@@ -8,6 +8,8 @@
 #include <openssl/ec.h>
 #include <openssl/obj_mac.h>
 #include <openssl/bn.h>
+#include <openssl/evp.h>
+
 #include <assert.h>
 
 #ifdef __unix__
@@ -20,10 +22,9 @@
 #	pragma warning( disable: 4996)
 #endif
 
-#define SHA256ROUNDS 1000000
-
 #define SIZE(x)    ((sizeof (x)) / (sizeof *(x)))
 #define PL(x) (x), ((sizeof (x)) / (sizeof *(x)))
+#define LP(x)      ((sizeof (x)) / (sizeof *(x))), (x)
 // исполнить e и проверить assert'ом результат
 #define ISNT_0(e) do { int is_0 = (e); assert( #e && is_0); } while(0)
 // указатель p должен попадать в массив array 
@@ -183,7 +184,6 @@ void hash160( const uint8_t *d, size_t n, uint8_t *md)
 // ==============================================================
 int main( const int argc, const char *argv[])
 {
-	int i;
 	uint8_t buf[ 4*1024];
 	SHA256_CTX sha256;
 	SHA256_Init( &sha256);
@@ -198,20 +198,12 @@ int main( const int argc, const char *argv[])
 		perror( argv[0]);
 		return errno;
 	}
-	uint8_t priv_key_bin[ SHA256_DIGEST_LENGTH];
-	SHA256_Final( priv_key_bin, &sha256);
+	uint8_t sha256digest[SHA256_DIGEST_LENGTH];
+	SHA256_Final( sha256digest, &sha256);
 
-	uint8_t sha256digest[ SHA256_DIGEST_LENGTH];
-	for( i = (SHA256ROUNDS - 1) / 2; i > 0; --i)
-	{
-		SHA256( PL( priv_key_bin), sha256digest);
-		SHA256( PL( sha256digest), priv_key_bin);
-	}
-
-#if (SHA256ROUNDS-1) % 2
-	SHA256( PL( priv_key_bin), sha256digest);
-	memcpy( priv_key_bin, PL( sha256digest));
-#endif
+	uint8_t priv_key_bin[SHA256_DIGEST_LENGTH];
+	static const uint8_t salt[] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+	ISNT_0( PKCS5_PBKDF2_HMAC( PL( sha256digest), PL( salt), 4096, EVP_sha256(), LP( priv_key_bin)));
 
 	BIGNUM *priv_key = BN_new();
 	BN_bin2bn( PL( priv_key_bin), priv_key);
