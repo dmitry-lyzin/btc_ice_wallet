@@ -202,7 +202,7 @@ int main( const int argc, const char *argv[])
 	SHA256_Final( sha256digest, &sha256);
 
 	uint8_t priv_key_bin[SHA256_DIGEST_LENGTH];
-	static const uint8_t salt[] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+	static const uint8_t salt[8] = { 0 };
 	ISNT_0( PKCS5_PBKDF2_HMAC( PL( sha256digest), PL( salt), 4096, EVP_sha256(), LP( priv_key_bin)));
 
 	BIGNUM *priv_key = BN_new();
