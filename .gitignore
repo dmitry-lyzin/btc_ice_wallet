@@ -339,3 +339,6 @@ ASALocalRun/
 # BeatPulse healthcheck temp database
 healthchecksdb
 /почитать.txt
+
+# My
+phc-winner-argon2/
