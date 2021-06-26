@@ -8,7 +8,7 @@
 #include <openssl/ec.h>
 #include <openssl/obj_mac.h>
 #include <openssl/bn.h>
-#include <openssl/evp.h>
+#include "argon2.h"
 
 #include <assert.h>
 
@@ -202,8 +202,15 @@ int main( const int argc, const char *argv[])
 	SHA256_Final( sha256digest, &sha256);
 
 	uint8_t priv_key_bin[SHA256_DIGEST_LENGTH];
-	static const uint8_t salt[8] = { 0 };
-	ISNT_0( PKCS5_PBKDF2_HMAC( PL( sha256digest), PL( salt), 4096, EVP_sha256(), LP( priv_key_bin)));
+	static const uint8_t salt[ 16] = { 0 };
+	// argon2i_hash_raw(t_cost, m_cost, parallelism, pwd, pwdlen, salt, SALTLEN, hash1, HASHLEN);
+	int rc = argon2i_hash_raw( 2, 1<<16, 1, PL( sha256digest), PL( salt), PL( priv_key_bin));
+	if( ARGON2_OK != rc)
+	{
+		fprintf( stderr, "argon2i_hash_raw() error: %s\n", argon2_error_message( rc));
+		return 1;
+	}
+
 
 	BIGNUM *priv_key = BN_new();
 	BN_bin2bn( PL( priv_key_bin), priv_key);
