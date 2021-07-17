@@ -18,7 +18,7 @@
 #else
 #	include <io.h>
 #	define STDIN_FILENO 0
-#	define SET_BINARY_MODE( handle) setmode( handle, O_BINARY)
+#	define SET_BINARY_MODE( handle) do { if( !isatty( handle)) setmode( handle, O_BINARY); } while(0)
 #	pragma warning( disable: 4996)
 #endif
 
