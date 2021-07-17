@@ -15,4 +15,5 @@ phc-winner-argon2/libargon2.a: phc-winner-argon2
 	$(MAKE) -C $(@D)
 
 phc-winner-argon2:
-	git clone git@github.com:P-H-C/phc-winner-argon2.git
+	git submodule update --init
+#	git clone git@github.com:P-H-C/phc-winner-argon2.git
