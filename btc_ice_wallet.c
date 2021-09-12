@@ -61,7 +61,7 @@ void print_segwit_with_checksum( const uint8_t *witprog, size_t witprog_len)
 	enum { max_witprog_len = 40 };
 	assert( 2 <= witprog_len && witprog_len <= max_witprog_len);
 
-	static const char bech32map[] = "qpzry9x8gf2tvdw0s3jn54khce6mua7l";
+	static const char bech32map[ 32] = "qpzry9x8gf2tvdw0s3jn54khce6mua7l";
 
 	// convert_bits
 	uint32_t val = 0;
@@ -132,7 +132,7 @@ void print_base58_with_checksum( uint8_t *src, size_t len)
 	enum { max_len = 34 };
 	assert( 0 < len && len <= max_len);
 
-	static const char base58map[] =	"123456789"
+	static const char base58map[ 58] =	"123456789"
 					"ABCDEFGH""JKLMN""PQRSTUVWXYZ"
 					"abcdefghijk""mnopqrstuvwxyz";
 
