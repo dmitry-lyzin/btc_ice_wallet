@@ -25,9 +25,9 @@
 #define SIZE(x)    ((sizeof (x)) / (sizeof *(x)))
 #define PL(x) (x), ((sizeof (x)) / (sizeof *(x)))
 #define LP(x)      ((sizeof (x)) / (sizeof *(x))), (x)
-// èñïîëíèòü e è ïğîâåğèòü assert'îì ğåçóëüòàò
+// Ğ¸ÑĞ¿Ğ¾Ğ»Ğ½Ğ¸Ñ‚ÑŒ e Ğ¸ Ğ¿Ñ€Ğ¾Ğ²ĞµÑ€Ğ¸Ñ‚ÑŒ assert'Ğ¾Ğ¼ Ñ€ĞµĞ·ÑƒĞ»ÑŒÑ‚Ğ°Ñ‚
 #define ISNT_0(e) do { int is_0 = (e); assert( #e && is_0); } while(0)
-// óêàçàòåëü p äîëæåí ïîïàäàòü â ìàññèâ array 
+// ÑƒĞºĞ°Ğ·Ğ°Ñ‚ĞµĞ»ÑŒ p Ğ´Ğ¾Ğ»Ğ¶ĞµĞ½ Ğ¿Ğ¾Ğ¿Ğ°Ğ´Ğ°Ñ‚ÑŒ Ğ² Ğ¼Ğ°ÑÑĞ¸Ğ² array 
 #define P_IN_ARRAY( p, array) do { assert( p >= array); assert( p < &array[ SIZE(array)]); } while(0)
 
 #define POINT_BIN_COMPRESSED_SIZE	33
