@@ -14,11 +14,10 @@
 
 #ifdef __unix__
 #	include <unistd.h>
-#	define SET_BINARY_MODE( handle) ((void)0)
+#	define O_BINARY 0
 #else
 #	include <io.h>
 #	define STDIN_FILENO 0
-#	define SET_BINARY_MODE( handle) do { if( !isatty( handle)) setmode( handle, O_BINARY); } while(0)
 #	pragma warning( disable: 4996)
 #endif
 
@@ -141,7 +140,8 @@ void print_base58_with_checksum( uint8_t *src, size_t len)
 	SHA256( PL( sha256digest), src + len);
 	len += 4;
 
-	char ret[ ((max_len + 4) * 13656582 + 13656582 / 2 + 1) / 10000000 + 2];  // ret[ round( ( max_len + 4) * log2( 256) / log2( 58)) + 2]
+	//   round((max_len + 4) * log2( 256) / log2( 58)) + 2]
+	char ret[ ((max_len + 4) * 13656582 + 13656582 / 2 + 1) / 10000000 + 2];
 	char *pret = ret + SIZE( ret);
 	uint8_t *end = src + len;
 
@@ -188,18 +188,40 @@ int main( const int argc, const char *argv[])
 	SHA256_CTX sha256;
 	SHA256_Init( &sha256);
 
-	SET_BINARY_MODE( STDIN_FILENO);
+	const char *filename = "STDIN";
+	int filedesc = STDIN_FILENO;
+
+	if( argc > 1)
+	{
+		filename = argv[1];
+		if( (filedesc = open( filename, O_RDONLY | O_BINARY)) < 0)
+		{
+			perror( filename);
+			return EXIT_FAILURE;
+		}
+	}
+
+	size_t bytes = 0;
 	int readed;
-	while( (readed = read( STDIN_FILENO, PL( buf))) > 0)
+	while( (readed = read( filedesc, PL( buf))) > 0)
+	{
+		bytes += readed;
 		SHA256_Update( &sha256, buf, readed);
+	}
+	printf( "Got %Iu bytes from %s\n", bytes, filename);
 
 	if( readed < 0)
 	{
-		perror( argv[0]);
-		return errno;
+		perror( filename);
+		return EXIT_FAILURE;
 	}
+
 	uint8_t sha256digest[SHA256_DIGEST_LENGTH];
 	SHA256_Final( sha256digest, &sha256);
+	printf( "SHA256: ");
+	for( int i = 0; i < SIZE( sha256digest); i++)
+		printf( "%hhX", sha256digest[i]);
+	printf( "\n");
 
 	uint8_t priv_key_bin[SHA256_DIGEST_LENGTH];
 	static const uint8_t salt[ 16] = "doremifasolasido";
