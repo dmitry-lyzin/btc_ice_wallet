@@ -208,7 +208,7 @@ int main( const int argc, const char *argv[])
 		bytes += readed;
 		SHA256_Update( &sha256, buf, readed);
 	}
-	printf( "Got %Iu bytes from %s\n", bytes, filename);
+	printf( "Got %lu bytes from %s\n", bytes, filename);
 
 	if( readed < 0)
 	{
